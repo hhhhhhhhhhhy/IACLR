@@ -62,7 +62,7 @@ class LightGCN_Intent(BasicModel):
 
         self.intent_anchors = [None for _ in range(self.num_views)]
         
-        self.intent_freeze_epochs = self.config.get('intent_freeze_epochs', 5)  # 默认冻结若干轮
+        self.intent_freeze_epochs = self.config.get('intent_freeze_epochs', 5)
         self.intent_frozen_until_epoch = [self.current_epoch + self.intent_freeze_epochs for _ in range(self.num_views)]
         print(f"Intent embedding frozen until epoch {self.intent_frozen_until_epoch[0]}")
         for v in range(self.num_views):
@@ -319,7 +319,7 @@ class LightGCN_Intent(BasicModel):
         view_item_from = []
 
         for v in range(self.num_views):
-            intent_emb = self.intent_projections[v](self.intent_embeddings[v])  # 投影
+            intent_emb = self.intent_projections[v](self.intent_embeddings[v])
             user_intent_attn = self._compute_attention(users_emb, intent_emb, self.user_intent_scales[v])
             item_intent_attn = self._compute_attention(items_emb, intent_emb, self.item_intent_scales[v])
 
@@ -350,7 +350,7 @@ class LightGCN_Intent(BasicModel):
                 items_enhanced = items_emb + sum(view_item_from) / float(self.num_views)
             elif self.fusion_type == 'gate':
                 gate = torch.sigmoid(self.intent_gate)
-                # keep original gating semantics: convex combination of raw and enhanced
+                
                 users_enhanced = (1 - gate) * users_emb + gate * (users_emb + sum(view_user_from)/float(self.num_views))
                 items_enhanced = (1 - gate) * items_emb + gate * (items_emb + sum(view_item_from)/float(self.num_views))
             else:
@@ -424,7 +424,7 @@ class LightGCN_Intent(BasicModel):
         return users_emb, pos_emb, neg_emb, users_emb_ego, pos_emb_ego, neg_emb_ego
 
     def iva_kl_loss(self, temp_t=0.07, temp_m=0.1):
-        v0, v1 = 0, 1  # 假设 view0=behavioral, view1=semantic
+        v0, v1 = 0, 1  # view0=behavioral, view1=semantic
         z_b = F.normalize(self.proj_mlp(self.intent_embeddings[v0]), dim=1)  # [K, d]
         z_s = F.normalize(self.proj_mlp(self.intent_embeddings[v1]), dim=1)  # [K, d]
 
@@ -540,7 +540,7 @@ class LightGCN_Intent(BasicModel):
         total_loss = bpr_loss_val + align_loss
         
         iva_lambda = float(self.config.get('lambda_iva', 0.0))
-        # 延后对齐
+
         if iva_lambda > 0 and self.num_views >= 2 and self.current_epoch >= self.warmup_epochs + self.iva_delay:
             if self.iva_kind == 'kl':
                 total_loss = total_loss + iva_lambda * self.iva_kl_loss()
